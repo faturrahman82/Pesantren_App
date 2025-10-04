@@ -1,0 +1,158 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+ 
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// Definisikan Enum terlebih dahulu
+// Definisikan Enum terlebih dahulu
+enum Role {
+  Admin
+  Ustadz
+  WaliSantri
+}
+
+enum StatusKehadiran {
+  H // Hadir
+  S // Sakit
+  I // Izin
+  A // Alpa
+}
+
+enum MapelType {
+  Fiqh
+  BahasaArab
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  password     String   // Harus disimpan dalam bentuk hash
+  role         Role     // Admin, Ustadz, WaliSantri
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relasi ke Santri (jika User adalah Wali Santri)
+  // Karena satu User (Wali Santri) hanya bisa terkait ke satu Santri,
+  // maka relasi ini adalah One-to-One.
+  santriId     String?  @unique
+  santri       Santri?  @relation(fields: [santriId], references: [id])
+
+  // Relasi ke Penilaian (jika User adalah Ustadz)
+  // Karena satu User (Ustadz) bisa menilai banyak Santri, maka relasi ini adalah One-to-Many.
+  // Field di model penilaian (misalnya `diinputOlehId`) akan menyimpan ID User ini.
+  penilaianTahfidz   PenilaianTahfidz[] @relation("PenilaianTahfidz_Ustadz")
+  penilaianMapel     PenilaianMapel[] @relation("PenilaianMapel_Ustadz")
+  penilaianAkhlak    PenilaianAkhlak[] @relation("PenilaianAkhlak_Ustadz")
+  kehadiran          Kehadiran[] @relation("Kehadiran_Ustadz")
+
+  @@map("users")
+}
+
+model Santri {
+  id          String            @id @default(cuid())
+  nis         String            @unique
+  nama        String
+  kamar       String
+  angkatan    Int
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  // Relasi balik ke User (Wali Santri)
+  user        User?
+
+  // Relasi ke Penilaian (satu Santri bisa punya banyak penilaian)
+  penilaianTahfidz   PenilaianTahfidz[] @relation("PenilaianTahfidz_Santri")
+  penilaianMapel     PenilaianMapel[] @relation("PenilaianMapel_Santri")
+  penilaianAkhlak    PenilaianAkhlak[] @relation("PenilaianAkhlak_Santri")
+  kehadiran          Kehadiran[] @relation("Kehadiran_Santri")
+
+  @@map("santri")
+}
+
+model PenilaianTahfidz {
+  id           String   @id @default(cuid())
+  santriId     String
+  santri       Santri   @relation(fields: [santriId], references: [id], name: "PenilaianTahfidz_Santri")
+  minggu       DateTime
+  surah        String
+  ayatSetor    Int      // Jumlah ayat yang disetor
+  target       Int      // Target ayat mingguan (untuk perhitungan)
+  tajwid       Int      // Skala 0-100
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  diinputOlehId String  // ID User (Ustadz) yang menginput
+  diinputOleh  User     @relation(fields: [diinputOlehId], references: [id], name: "PenilaianTahfidz_Ustadz")
+
+  @@map("penilaian_tahfidz")
+}
+
+model PenilaianMapel {
+  id           String   @id @default(cuid())
+  santriId     String
+  santri       Santri   @relation(fields: [santriId], references: [id], name: "PenilaianMapel_Santri")
+  mapel        MapelType // "Fiqh" atau "Bahasa Arab"
+  formatif     Int      // Skala 0-100
+  sumatif      Int      // Skala 0-100
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  diinputOlehId String  // ID User (Ustadz) yang menginput
+  diinputOleh  User     @relation(fields: [diinputOlehId], references: [id], name: "PenilaianMapel_Ustadz")
+
+  @@map("penilaian_mapel")
+}
+
+model PenilaianAkhlak {
+  id            String   @id @default(cuid())
+  santriId      String
+  santri        Santri   @relation(fields: [santriId], references: [id], name: "PenilaianAkhlak_Santri")
+  disiplin      Int      // Skala 1-4
+  adab          Int      // Skala 1-4
+  kebersihan    Int      // Skala 1-4
+  kerjasama     Int      // Skala 1-4
+  catatan       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  diinputOlehId String  // ID User (Ustadz) yang menginput
+  diinputOleh   User     @relation(fields: [diinputOlehId], references: [id], name: "PenilaianAkhlak_Ustadz")
+
+  @@map("penilaian_akhlak")
+}
+
+model Kehadiran {
+  id           String   @id @default(cuid())
+  santriId     String
+  santri       Santri   @relation(fields: [santriId], references: [id], name: "Kehadiran_Santri")
+  tanggal      DateTime
+  status       StatusKehadiran // "H", "S", "I", "A"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  diinputOlehId String  // ID User (Ustadz) yang menginput
+  diinputOleh  User     @relation(fields: [diinputOlehId], references: [id], name: "Kehadiran_Ustadz")
+
+  @@map("kehadiran")
+}
+
+// (Opsional) Tabel untuk menyimpan konfigurasi bobot
+model BobotKonfigurasi {
+  id              String @id @default(cuid())
+  tahfidz         Float  @default(0.30)
+  fiqh            Float  @default(0.20)
+  bahasaArab      Float  @default(0.20)
+  akhlak          Float  @default(0.20)
+  kehadiran       Float  @default(0.10)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("bobot_konfigurasi")
+}

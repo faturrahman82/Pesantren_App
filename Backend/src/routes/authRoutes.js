@@ -1,0 +1,14 @@
+// src/routes/authRoutes.js
+
+const express = require('express');
+const { login, register } = require('../controllers/authController');
+
+const router = express.Router();
+
+// --- TIDAK ADA middleware authenticateToken di sini ---
+// router.use(authenticateToken); // <-- PASTIKAN TIDAK ADA
+
+router.post('/login', login);
+router.post('/register', register);
+
+module.exports = router;
