@@ -2,13 +2,58 @@
 
 const authService = require('../services/authService');
 
+/**
+ * @swagger
+ * tags:
+ *   name: Auth
+ *   description: Authentication and User Management
+ */
+
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Login user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: admin@example.com
+ *               password:
+ *                 type: string
+ *                 example: password123
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     role:
+ *                       type: string
+ *                 token:
+ *                   type: string
+ *       401:
+ *         description: Invalid credentials
+ */
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    console.log("DEBUG: Login controller called with email:", email); // Log tambahan
-
-    // Validasi input sederhana
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
@@ -16,27 +61,71 @@ const login = async (req, res) => {
     const result = await authService.login(email, password);
     res.status(200).json(result);
   } catch (error) {
-    console.error("DEBUG: Login controller error:", error.message); // Log tambahan
-    res.status(401).json({ error: error.message }); // 401 untuk login gagal
+    res.status(401).json({ error: error.message });
   }
 };
 
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Register a new user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: ustadz.baru@example.com
+ *               password:
+ *                 type: string
+ *                 example: password123
+ *               role:
+ *                 type: string
+ *                 enum: [Admin, Ustadz, WaliSantri]
+ *                 example: Ustadz
+ *               santriId:
+ *                 type: string
+ *                 example: cmgc2t9kc0001tjr0rbtvag3z
+ *                 required: false
+ *     responses:
+ *       201:
+ *         description: User registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     role:
+ *                       type: string
+ *                 token:
+ *                   type: string
+ *       400:
+ *         description: Bad request (invalid input)
+ */
 const register = async (req, res) => {
   try {
     const { email, password, role, santriId } = req.body;
 
-    console.log("DEBUG: Register controller called with email:", email, "role:", role); // Log tambahan
-
-    // Validasi input sederhana
     if (!email || !password || !role) {
       return res.status(400).json({ error: 'Email, password, and role are required' });
     }
 
     const result = await authService.register(email, password, role, santriId);
-    res.status(201).json(result); // 201 untuk created
+    res.status(201).json(result);
   } catch (error) {
-    console.error("DEBUG: Register controller error:", error.message); // Log tambahan
-    res.status(400).json({ error: error.message }); // 400 untuk error umum (termasuk validasi)
+    res.status(400).json({ error: error.message });
   }
 };
 
@@ -44,4 +133,3 @@ module.exports = {
   login,
   register,
 };
-// --- PASTIKAN TIDAK ADA KODE DI SINI YANG MENGAKSES req.user ---

@@ -1,31 +1,51 @@
 // src/routes/penilaianRoutes.js
 
 const express = require('express');
-// Import middleware authenticateToken dan authorizeRole
-const { authenticateToken } = require('../middleware/auth'); // Sesuaikan path jika berbeda
-const { authorizeRole } = require('../middleware/roleGuard'); // Middleware untuk role
-const { ROLE } = require('../utils/constants'); // Impor enum role
+const { authenticateToken } = require('../middleware/auth');
+const { authorizeRole } = require('../middleware/roleGuard');
+const { ROLE } = require('../utils/constants');
 const {
+  createPenilaianTahfidz,
+  createPenilaianMapel,
+  createPenilaianAkhlak,
+  createKehadiran,
   getRaporSantri,
-  createPenilaianTahfidz, // Contoh fungsi lain
-  // Tambahkan fungsi lain seperti createPenilaianMapel, dll.
+  getPenilaianTahfidzById,
+  getPenilaianTahfidzBySantri,
+  getPenilaianMapelById,
+  getPenilaianMapelBySantri,
+  getPenilaianAkhlakById,
+  getPenilaianAkhlakBySantri,
+  getKehadiranById,
+  getKehadiranBySantri,
 } = require('../controllers/penilaianController');
 
 const router = express.Router();
 
-// --- Tambahkan middleware authenticateToken di sini ---
-// Semua route di bawah ini di file ini akan memerlukan autentikasi
+// Semua route di bawah ini memerlukan autentikasi
 router.use(authenticateToken);
-
-// Endpoint untuk mendapatkan rapor (akan ditambahkan role guard nanti)
-// Endpoint ini bisa diakses oleh Admin, Ustadz, atau Wali Santri terkait
-// Untuk Wali Santri, kita perlu validasi tambahan di controller atau middleware roleGuard lanjutan
-router.get('/rapor/:santriId', getRaporSantri);
 
 // Endpoint untuk input penilaian (hanya Ustadz/Admin)
 router.post('/tahfidz', authorizeRole(ROLE.USTADZ, ROLE.ADMIN), createPenilaianTahfidz);
-// router.post('/mapel', authorizeRole(ROLE.USTADZ, ROLE.ADMIN), createPenilaianMapel);
-// router.post('/akhlak', authorizeRole(ROLE.USTADZ, ROLE.ADMIN), createPenilaianAkhlak);
-// router.post('/kehadiran', authorizeRole(ROLE.USTADZ, ROLE.ADMIN), createKehadiran);
+router.post('/mapel', authorizeRole(ROLE.USTADZ, ROLE.ADMIN), createPenilaianMapel);
+router.post('/akhlak', authorizeRole(ROLE.USTADZ, ROLE.ADMIN), createPenilaianAkhlak);
+router.post('/kehadiran', authorizeRole(ROLE.USTADZ, ROLE.ADMIN), createKehadiran);
+
+// Endpoint untuk mendapatkan rapor (bisa diakses oleh Admin, Ustadz, atau Wali Santri terkait)
+// Validasi akses Wali Santri terhadap santriId bisa ditambahkan di controller getRaporSantri
+router.get('/tahfidz/:id', getPenilaianTahfidzById); // Contoh: hanya Admin/Ustadz bisa edit, jadi akses detail mungkin perlu role guard
+router.get('/tahfidz/santri/:santriId', getPenilaianTahfidzBySantri); // Lihat semua penilaian tahfidz untuk satu santri
+
+router.get('/mapel/:id', getPenilaianMapelById);
+router.get('/mapel/santri/:santriId', getPenilaianMapelBySantri);
+
+router.get('/akhlak/:id', getPenilaianAkhlakById);
+router.get('/akhlak/santri/:santriId', getPenilaianAkhlakBySantri);
+
+router.get('/kehadiran/:id', getKehadiranById);
+router.get('/kehadiran/santri/:santriId', getKehadiranBySantri);
+
+// Endpoint untuk mendapatkan rapor (bisa diakses oleh Admin, Ustadz, atau Wali Santri terkait)
+router.get('/rapor/:santriId', getRaporSantri); // Middleware authorizeRole bisa ditambahkan jika perlu, tapi validasi spesifik Wali terhadap santriId lebih tepat di controller
 
 module.exports = router;

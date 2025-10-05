@@ -7,7 +7,7 @@ const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
-  console.log("DEBUG: Authorization header found:", !!authHeader, "Token found:", !!token); // Log keberadaan header/token
+  console.log("DEBUG: Authorization header found:", !!authHeader, "Token found:", !!token);
 
   if (!token) {
     console.log("DEBUG: No token found, returning 401");
@@ -19,7 +19,11 @@ const authenticateToken = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     console.log("DEBUG: Token verified, decoded user ID:", decoded.userId);
 
-    const { prisma } = require('../app'); // Import prisma di dalam fungsi async
+    // --- Perubahan penting di sini ---
+    // Ganti baris ini:
+    // const { prisma } = require('../app');
+    // Dengan impor dari singleton:
+    const prisma = require('../config/prisma'); // Impor instance singleton
 
     // Cari user berdasarkan ID dari token
     const user = await prisma.user.findUnique({
@@ -27,7 +31,7 @@ const authenticateToken = async (req, res, next) => {
       select: { id: true, email: true, role: true } // Jangan kirim password
     });
 
-    console.log("DEBUG: User lookup result:", !!user); // Log apakah user ditemukan
+    console.log("DEBUG: User lookup result:", !!user);
 
     if (!user) {
       console.log("DEBUG: User not found in DB, returning 401");
